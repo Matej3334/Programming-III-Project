@@ -1,10 +1,15 @@
 package Parallel;
 
 import org.example.Cluster;
+import org.example.EuclideanDistance;
 import org.example.JSONReader;
 import org.example.WasteSite;
 
 import java.util.*;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Parallel {
     private final int sites;
@@ -12,16 +17,25 @@ public class Parallel {
     private final JSONReader jsonReader;
     private List<WasteSite> wasteSiteList;
     private final List<Cluster> clusterList;
+    private static final int processors = Runtime.getRuntime().availableProcessors();
+    private final ExecutorService threadPool;
+    public static AtomicBoolean changeFlag;
+    private final CyclicBarrier barrier;
 
     public Parallel(int sites, int clusters, String file_path){
         this.sites = sites;
         this.clusters = clusters;
         this.clusterList = new ArrayList<>();
         this.jsonReader = new JSONReader();
+        this.threadPool = Executors.newFixedThreadPool(processors);
+        this.barrier = new CyclicBarrier(clusters);
+        changeFlag.set(false);
         InitializeWasteSites(file_path);
         InitializeClusters();
         Kmeans();
         printResults();
+
+        threadPool.shutdown();
     }
 
     public void InitializeWasteSites(String file_path){
@@ -73,6 +87,28 @@ public class Parallel {
     }
 
     private void Kmeans(){
+        for(WasteSite wasteSite : wasteSiteList){
+            Cluster nearestCluster = null;
+            double minDistance = Double.MAX_VALUE;
+
+            for(Cluster cluster : clusterList){
+                double distance = EuclideanDistance.calculate(
+                        wasteSite.la(), wasteSite.lo(), cluster.getLa(), cluster.getLo());
+
+                if(distance < minDistance){
+                    minDistance = distance;
+                    nearestCluster = cluster;
+                }
+            }
+
+            assert nearestCluster != null;
+            nearestCluster.addWasteSite(wasteSite);
+        }
+
+        for (int i = 0; i < clusterList.size(); i++) {
+            FindNearestCluster worker = new FindNearestCluster(clusterList.get(i), clusterList, barrier);
+            threadPool.submit(worker);
+        }
 
     }
     public void printResults() {
