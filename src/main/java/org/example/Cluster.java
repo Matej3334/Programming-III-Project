@@ -31,8 +31,8 @@ public class Cluster {
         this.lo = lo;
     }
 
-    public List<WasteSite> getWasteSiteList() {
-        return wasteSiteList;
+    public List<WasteSite>  getWasteSiteList() {
+        return List.copyOf(wasteSiteList);
     }
 
     public void clearWasteSiteList(){
@@ -61,5 +61,14 @@ public class Cluster {
         result[1] = lo/length;
 
         return result;
+    }
+
+    //used in parallel
+
+    public synchronized void removeWasteSiteParallel(WasteSite wasteSite){this.wasteSiteList.remove(wasteSite);}
+    public synchronized void addWasteSiteParallel(WasteSite wasteSite){this.wasteSiteList.add(wasteSite);}
+
+    public List<WasteSite>  getWasteSiteListCopy() {
+        return List.copyOf(wasteSiteList);
     }
 }

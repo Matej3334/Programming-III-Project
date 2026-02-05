@@ -10,6 +10,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Parallel {
     private final int sites;
@@ -19,8 +20,11 @@ public class Parallel {
     private final List<Cluster> clusterList;
     private static final int processors = Runtime.getRuntime().availableProcessors();
     private final ExecutorService threadPool;
-    public static AtomicBoolean changeFlag;
-    private final CyclicBarrier barrier;
+    public static AtomicBoolean flag;
+    private final CyclicBarrier a_barrier;
+    private final CyclicBarrier m_barrier;
+    private final CyclicBarrier end_barrier;
+    public static AtomicInteger iterations;
 
     public Parallel(int sites, int clusters, String file_path){
         this.sites = sites;
@@ -28,14 +32,16 @@ public class Parallel {
         this.clusterList = new ArrayList<>();
         this.jsonReader = new JSONReader();
         this.threadPool = Executors.newFixedThreadPool(processors);
-        this.barrier = new CyclicBarrier(clusters);
-        changeFlag.set(false);
+
+        iterations = new AtomicInteger(0);
+        this.a_barrier = new CyclicBarrier(clusters, this::changeFlag);
+        this.m_barrier = new CyclicBarrier(clusters,this::addCount);
+        this.end_barrier = new CyclicBarrier(clusters,this::printResults);
+
+        flag = new AtomicBoolean(true);
         InitializeWasteSites(file_path);
         InitializeClusters();
         Kmeans();
-        printResults();
-
-        threadPool.shutdown();
     }
 
     public void InitializeWasteSites(String file_path){
@@ -106,14 +112,30 @@ public class Parallel {
         }
 
         for (int i = 0; i < clusterList.size(); i++) {
-            FindNearestCluster worker = new FindNearestCluster(clusterList.get(i), clusterList, barrier);
+            FindNearestCluster worker = new FindNearestCluster(clusterList.get(i), clusterList, a_barrier, m_barrier, end_barrier);
             threadPool.submit(worker);
         }
-
     }
     public void printResults() {
         System.out.println("\n===== K-means Clustering Results =====");
         System.out.println("Number of clusters: " + clusterList.size());
         System.out.println("Number of waste sites: " + wasteSiteList.size());
+        int i = 1;
+        for(Cluster cluster: clusterList){
+            System.out.println("Cluster " + i + " has " + cluster.getWasteSiteList().size() + " WasteSites.");
+            i++;
+        }
+    }
+
+    private void addCount(){
+        iterations.incrementAndGet();
+    }
+
+    private void changeFlag(){
+        flag.set(false);
+    }
+
+    public List<Cluster> getClusterList() {
+        return clusterList;
     }
 }

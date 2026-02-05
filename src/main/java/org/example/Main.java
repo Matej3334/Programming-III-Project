@@ -1,6 +1,8 @@
 package org.example;
 
 
+import Parallel.Parallel;
+
 import java.util.List;
 import java.util.Scanner;
 public class Main {
@@ -31,18 +33,26 @@ public class Main {
         }
         switch (runProgram){
             case 1:
-                long start = System.currentTimeMillis();
+                long seq_start = System.currentTimeMillis();
                 Sequential seq = new Sequential(sites, clusters, file_path);
                 if(useGUI==1) {
                     List<Cluster> clusterList = seq.getClusterList();
                     GUI gui = new GUI(width, height);
                     gui.drawClusters(clusterList);
                 }
-                long end = System.currentTimeMillis();
-                System.out.println("Time spent computing: " + (end-start) + "ms");
+                long seq_end = System.currentTimeMillis();
+                System.out.println("Time spent computing: " + (seq_end-seq_start) + "ms");
                 break;
             case 2:
-                System.out.println("Parallel not implemented yet.");
+                long par_start = System.currentTimeMillis();
+                Parallel parallel = new Parallel(sites, clusters, file_path);
+                if(useGUI==1) {
+                    List<Cluster> clusterList = parallel.getClusterList();
+                    GUI gui = new GUI(width, height);
+                    gui.drawClusters(clusterList);
+                }
+                long par_end = System.currentTimeMillis();
+                System.out.println("Time spent computing: " + (par_end-par_start) + "ms");
                 break;
             case 3:
                 System.out.println("Distributed not implemented yet.");
