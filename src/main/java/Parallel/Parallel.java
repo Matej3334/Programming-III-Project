@@ -6,9 +6,7 @@ import org.example.JSONReader;
 import org.example.WasteSite;
 
 import java.util.*;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,22 +19,24 @@ public class Parallel {
     private static final int processors = Runtime.getRuntime().availableProcessors();
     private final ExecutorService threadPool;
     public static AtomicBoolean flag;
-    private final CyclicBarrier a_barrier;
-    private final CyclicBarrier m_barrier;
-    private final CyclicBarrier end_barrier;
+    //private final CyclicBarrier a_barrier;
+    //private final CyclicBarrier m_barrier;
+    //private final CyclicBarrier end_barrier;
     public static AtomicInteger iterations;
+    private final CountDownLatch end_latch;
 
-    public Parallel(int sites, int clusters, String file_path){
+    public Parallel(int sites, int clusters, String file_path, CountDownLatch end_latch){
         this.sites = sites;
         this.clusters = clusters;
         this.clusterList = new ArrayList<>();
         this.jsonReader = new JSONReader();
         this.threadPool = Executors.newFixedThreadPool(processors);
+        this.end_latch = end_latch;
 
         iterations = new AtomicInteger(0);
-        this.a_barrier = new CyclicBarrier(clusters, this::changeFlag);
-        this.m_barrier = new CyclicBarrier(clusters,this::addCount);
-        this.end_barrier = new CyclicBarrier(clusters,this::printResults);
+        //this.a_barrier = new CyclicBarrier(clusters, this::changeFlag);
+        //this.m_barrier = new CyclicBarrier(clusters,this::addCount);
+        //this.end_barrier = new CyclicBarrier(clusters,this::printResults);
 
         flag = new AtomicBoolean(true);
         InitializeWasteSites(file_path);
@@ -111,10 +111,39 @@ public class Parallel {
             nearestCluster.addWasteSite(wasteSite);
         }
 
-        for (int i = 0; i < clusterList.size(); i++) {
-            FindNearestCluster worker = new FindNearestCluster(clusterList.get(i), clusterList, a_barrier, m_barrier, end_barrier);
-            threadPool.submit(worker);
+        while(flag.get() && iterations.get() < 20) {
+            flag.set(false);
+
+            CountDownLatch latch = new CountDownLatch(clusters);
+            System.out.println(clusters);
+            for (int i = 0; i < clusters; i++) {
+                threadPool.submit(new FindNewMean(clusterList.get(i), latch));
+            }
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            if(!flag.get()){
+                break;
+            }
+
+            CountDownLatch latch2 = new CountDownLatch(clusters);
+            for (int i = 0; i < clusters; i++) {
+                threadPool.submit(new FindNearestCluster(clusterList.get(i), clusterList, latch2));
+            }
+
+            try {
+                latch2.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            iterations.incrementAndGet();
         }
+
+        printResults();
     }
     public void printResults() {
         System.out.println("\n===== K-means Clustering Results =====");
@@ -125,15 +154,9 @@ public class Parallel {
             System.out.println("Cluster " + i + " has " + cluster.getWasteSiteList().size() + " WasteSites.");
             i++;
         }
+        end_latch.countDown();
     }
 
-    private void addCount(){
-        iterations.incrementAndGet();
-    }
-
-    private void changeFlag(){
-        flag.set(false);
-    }
 
     public List<Cluster> getClusterList() {
         return clusterList;

@@ -6,7 +6,7 @@ import java.util.List;
 public class Cluster {
     private double la;
     private double lo;
-    private final List<WasteSite> wasteSiteList;
+    private List<WasteSite> wasteSiteList;
 
     public Cluster(double la, double lo){
         this.la = la;
