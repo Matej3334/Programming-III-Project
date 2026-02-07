@@ -69,11 +69,10 @@ public class Sequential {
     }
 
     private void Kmeans(){
-        int iterationsWithNoChange = 0;
         int iterations = 0;
-
-        while (iterationsWithNoChange <= 2 && iterations < 20) {
-            boolean change = false;
+        boolean change = true;
+        while (change && iterations < 20) {
+            change = false;
             iterations++;
 
             for(Cluster cluster : clusterList){
@@ -106,19 +105,12 @@ public class Sequential {
                     double distance = EuclideanDistance.calculate(
                             cluster.getLa(), cluster.getLo(), newCenter[0], newCenter[1]);
 
-                    if (distance > 0.01) {
+                    if (distance > 0.001) {
                         cluster.setLa(newCenter[0]);
                         cluster.setLo(newCenter[1]);
                         change = true;
                     }
                 }
-            }
-
-            if(!change){
-                iterationsWithNoChange += 1;
-            }
-            else{
-                iterationsWithNoChange = 0;
             }
         }
         System.out.println("Kmeans finished with " + iterations + " iterations.");

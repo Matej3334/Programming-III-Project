@@ -87,26 +87,31 @@ public class Parallel {
     }
 
     private void Kmeans(){
-        for(WasteSite wasteSite : wasteSiteList){
-            Cluster nearestCluster = null;
-            double minDistance = Double.MAX_VALUE;
-
-            for(Cluster cluster : clusterList){
-                double distance = EuclideanDistance.calculate(
-                        wasteSite.la(), wasteSite.lo(), cluster.getLa(), cluster.getLo());
-
-                if(distance < minDistance){
-                    minDistance = distance;
-                    nearestCluster = cluster;
-                }
-            }
-
-            assert nearestCluster != null;
-            nearestCluster.addWasteSite(wasteSite);
-        }
-
         while(flag.get() && iterations.get() < 20) {
             flag.set(false);
+
+
+            for(Cluster cluster : clusterList){
+                cluster.clearWasteSiteList();
+            }
+
+            for(WasteSite wasteSite : wasteSiteList){
+                Cluster nearestCluster = null;
+                double minDistance = Double.MAX_VALUE;
+
+                for(Cluster cluster : clusterList){
+                    double distance = EuclideanDistance.calculate(
+                            wasteSite.la(), wasteSite.lo(), cluster.getLa(), cluster.getLo());
+
+                    if(distance < minDistance){
+                        minDistance = distance;
+                        nearestCluster = cluster;
+                    }
+                }
+
+                assert nearestCluster != null;
+                nearestCluster.addWasteSite(wasteSite);
+            }
 
             CountDownLatch latch = new CountDownLatch(clusters);
             System.out.println(clusters);
@@ -119,7 +124,8 @@ public class Parallel {
                 throw new RuntimeException(e);
             }
 
-            if(!flag.get()){
+
+            /*if(!flag.get()){
                 break;
             }
 
@@ -132,11 +138,11 @@ public class Parallel {
                 latch2.await();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
-            }
+            }*/
 
             iterations.incrementAndGet();
-        }
 
+        }
         printResults();
     }
     public void printResults() {

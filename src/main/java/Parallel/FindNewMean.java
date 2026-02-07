@@ -34,7 +34,7 @@ public class FindNewMean implements Runnable{
             double distance = EuclideanDistance.calculate(
                     start_Cluster.getLa(), start_Cluster.getLo(), newCenter[0], newCenter[1]);
 
-            if (distance > 0.01) {
+            if (distance > 0.001) {
                 start_Cluster.setLa(newCenter[0]);
                 start_Cluster.setLo(newCenter[1]);
                 change = true;
