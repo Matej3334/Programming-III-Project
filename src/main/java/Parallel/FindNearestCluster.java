@@ -13,13 +13,13 @@ import java.util.concurrent.CountDownLatch;
 public class FindNearestCluster implements Runnable{
     private final List<WasteSite> wasteSiteList;
     private final List<Cluster> clusterList;
-    private final Cluster start_Cluster;
+    private final Cluster sCluster;
     private final CountDownLatch latch;
 
-    public FindNearestCluster(Cluster start_Cluster, List<Cluster> clusterList, CountDownLatch latch){
+    public FindNearestCluster(Cluster sCluster, List<Cluster> clusterList, CountDownLatch latch){
         this.clusterList = clusterList;
-        this.start_Cluster = start_Cluster;
-        this.wasteSiteList = start_Cluster.getWasteSiteList();
+        this.sCluster = sCluster;
+        this.wasteSiteList = sCluster.getWasteSiteList();
         this.latch = latch;
     }
 
@@ -41,16 +41,10 @@ public class FindNearestCluster implements Runnable{
             }
 
             assert nearestCluster != null;
-            if(nearestCluster != start_Cluster){
-                nearestCluster.addWasteSiteParallel(wasteSite);
-                start_Cluster.removeWasteSiteParallel(wasteSite);
-                System.out.println(Thread.currentThread().getName() + " changed site" );
-            } else {
-                start_Cluster.addWasteSiteParallel(wasteSite);
-            }
-        }
+            nearestCluster.addWasteSiteParallel(wasteSite);
 
+        }
         latch.countDown();
-        System.out.println(Thread.currentThread().getName() + " waste sites done");
+        //System.out.println(Thread.currentThread().getName() + " waste sites done");
     }
 }

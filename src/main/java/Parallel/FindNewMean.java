@@ -22,7 +22,7 @@ public class FindNewMean implements Runnable{
         if(calculateMedian()){
             Parallel.flag.set(true);
         }
-        System.out.println("Found mean for " + Thread.currentThread().getName());
+        //System.out.println("Found mean for " + Thread.currentThread().getName());
         latch.countDown();
     }
     private boolean calculateMedian(){

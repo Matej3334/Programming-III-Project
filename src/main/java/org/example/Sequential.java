@@ -71,9 +71,48 @@ public class Sequential {
     private void Kmeans(){
         int iterations = 0;
         boolean change = true;
+
+        for(WasteSite wasteSite : wasteSiteList){
+            Cluster nearestCluster = null;
+            double minDistance = Double.MAX_VALUE;
+
+            for(Cluster cluster : clusterList){
+                double distance = EuclideanDistance.calculate(
+                        wasteSite.la(), wasteSite.lo(), cluster.getLa(), cluster.getLo());
+
+                if(distance < minDistance){
+                    minDistance = distance;
+                    nearestCluster = cluster;
+                }
+            }
+
+            assert nearestCluster != null;
+            nearestCluster.addWasteSite(wasteSite);
+        }
+
         while (change && iterations < 20) {
             change = false;
             iterations++;
+
+            for(Cluster cluster : clusterList){
+                if(!cluster.getWasteSiteList().isEmpty()) {
+
+                    double[] newCenter = cluster.changeCenter();
+
+                    double distance = EuclideanDistance.calculate(
+                            cluster.getLa(), cluster.getLo(), newCenter[0], newCenter[1]);
+
+                    if (distance > 0.001) {
+                        cluster.setLa(newCenter[0]);
+                        cluster.setLo(newCenter[1]);
+                        change = true;
+                    }
+                }
+            }
+
+            if(!change){
+                break;
+            }
 
             for(Cluster cluster : clusterList){
                 cluster.clearWasteSiteList();
@@ -95,22 +134,6 @@ public class Sequential {
 
                 assert nearestCluster != null;
                 nearestCluster.addWasteSite(wasteSite);
-            }
-
-            for(Cluster cluster : clusterList){
-                if(!cluster.getWasteSiteList().isEmpty()) {
-
-                    double[] newCenter = cluster.changeCenter();
-
-                    double distance = EuclideanDistance.calculate(
-                            cluster.getLa(), cluster.getLo(), newCenter[0], newCenter[1]);
-
-                    if (distance > 0.001) {
-                        cluster.setLa(newCenter[0]);
-                        cluster.setLo(newCenter[1]);
-                        change = true;
-                    }
-                }
             }
         }
         System.out.println("Kmeans finished with " + iterations + " iterations.");

@@ -87,34 +87,30 @@ public class Parallel {
     }
 
     private void Kmeans(){
+
+        for(WasteSite wasteSite : wasteSiteList){
+            Cluster nearestCluster = null;
+            double minDistance = Double.MAX_VALUE;
+
+            for(Cluster cluster : clusterList){
+                double distance = EuclideanDistance.calculate(
+                        wasteSite.la(), wasteSite.lo(), cluster.getLa(), cluster.getLo());
+
+                if(distance < minDistance){
+                    minDistance = distance;
+                    nearestCluster = cluster;
+                }
+            }
+
+            assert nearestCluster != null;
+            nearestCluster.addWasteSite(wasteSite);
+        }
+
         while(flag.get() && iterations.get() < 20) {
             flag.set(false);
 
-
-            for(Cluster cluster : clusterList){
-                cluster.clearWasteSiteList();
-            }
-
-            for(WasteSite wasteSite : wasteSiteList){
-                Cluster nearestCluster = null;
-                double minDistance = Double.MAX_VALUE;
-
-                for(Cluster cluster : clusterList){
-                    double distance = EuclideanDistance.calculate(
-                            wasteSite.la(), wasteSite.lo(), cluster.getLa(), cluster.getLo());
-
-                    if(distance < minDistance){
-                        minDistance = distance;
-                        nearestCluster = cluster;
-                    }
-                }
-
-                assert nearestCluster != null;
-                nearestCluster.addWasteSite(wasteSite);
-            }
-
             CountDownLatch latch = new CountDownLatch(clusters);
-            System.out.println(clusters);
+
             for (int i = 0; i < clusters; i++) {
                 threadPool.submit(new FindNewMean(clusterList.get(i), latch));
             }
@@ -124,8 +120,7 @@ public class Parallel {
                 throw new RuntimeException(e);
             }
 
-
-            /*if(!flag.get()){
+            if(!flag.get()){
                 break;
             }
 
@@ -134,15 +129,20 @@ public class Parallel {
                 threadPool.submit(new FindNearestCluster(clusterList.get(i), clusterList, latch2));
             }
 
+
             try {
                 latch2.await();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
-            }*/
+            }
 
+            for (Cluster cluster: clusterList) {
+                cluster.clearWasteSiteList();
+                cluster.changeSites();
+            }
             iterations.incrementAndGet();
-
         }
+
         printResults();
     }
     public void printResults() {
