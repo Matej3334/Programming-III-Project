@@ -10,11 +10,11 @@ import java.util.concurrent.CountDownLatch;
 public class FindNewMean implements Runnable{
     private final Cluster start_Cluster;
     private final List<WasteSite> wasteSiteList;
-    private CountDownLatch latch;
+    private final CountDownLatch latch;
 
     public FindNewMean(Cluster start_Cluster, CountDownLatch latch){
         this.start_Cluster = start_Cluster;
-        this.wasteSiteList = start_Cluster.getWasteSiteListCopy();
+        this.wasteSiteList = start_Cluster.getWasteSiteList();
         this.latch = latch;
     }
     @Override

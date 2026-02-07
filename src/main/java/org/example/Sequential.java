@@ -39,7 +39,7 @@ public class Sequential {
 
         if (sites > siteNum){ //If the number of sites that was requested is larger than dataset, create random sites
             int newSites = sites - siteNum;
-            Random random = new Random();
+            Random random = new Random(2);
             for (int i = 0; i < newSites; i++) {
                 double capacity = random.nextDouble(1,180);
                 double la = random.nextDouble(47.8, 53.2);
@@ -52,7 +52,7 @@ public class Sequential {
     }
 
     private void InitializeClusters(){
-        Random random = new Random();
+        Random random = new Random(1);
         Set<Integer> startClusters = new HashSet<>();
 
         int ListSize = wasteSiteList.size();
@@ -72,7 +72,7 @@ public class Sequential {
         int iterationsWithNoChange = 0;
         int iterations = 0;
 
-        while (iterationsWithNoChange <= 5) {
+        while (iterationsWithNoChange <= 2 && iterations < 20) {
             boolean change = false;
             iterations++;
 
@@ -131,5 +131,10 @@ public class Sequential {
         System.out.println("\n===== K-means Clustering Results =====");
         System.out.println("Number of clusters: " + clusterList.size());
         System.out.println("Number of waste sites: " + wasteSiteList.size());
+        int i = 1;
+        for(Cluster cluster: clusterList){
+            System.out.println("Cluster " + i + " has " + cluster.getWasteSiteList().size() + " WasteSites.");
+            i++;
+        }
     }
 }

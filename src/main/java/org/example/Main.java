@@ -12,7 +12,6 @@ public class Main {
     private static final String file_path = "src/main/resources/germany/germany.json";
     private static int width=800;
     private static int height=600;
-    private static CountDownLatch latch;
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -48,7 +47,7 @@ public class Main {
                 System.out.println("Time spent computing: " + (seq_end-seq_start) + "ms");
                 break;
             case 2:
-                latch = new CountDownLatch(1);
+                CountDownLatch latch = new CountDownLatch(1);
                 long par_start = System.currentTimeMillis();
                 Parallel parallel = new Parallel(sites, clusters, file_path, latch);
                 try {

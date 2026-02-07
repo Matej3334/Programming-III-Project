@@ -63,7 +63,7 @@ public class Cluster {
         return result;
     }
 
-    //used in parallel
+    //methods used in parallel
 
     public synchronized void removeWasteSiteParallel(WasteSite wasteSite){this.wasteSiteList.remove(wasteSite);}
     public synchronized void addWasteSiteParallel(WasteSite wasteSite){this.wasteSiteList.add(wasteSite);}

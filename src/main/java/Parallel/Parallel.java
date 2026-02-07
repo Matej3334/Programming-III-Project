@@ -19,9 +19,6 @@ public class Parallel {
     private static final int processors = Runtime.getRuntime().availableProcessors();
     private final ExecutorService threadPool;
     public static AtomicBoolean flag;
-    //private final CyclicBarrier a_barrier;
-    //private final CyclicBarrier m_barrier;
-    //private final CyclicBarrier end_barrier;
     public static AtomicInteger iterations;
     private final CountDownLatch end_latch;
 
@@ -34,9 +31,6 @@ public class Parallel {
         this.end_latch = end_latch;
 
         iterations = new AtomicInteger(0);
-        //this.a_barrier = new CyclicBarrier(clusters, this::changeFlag);
-        //this.m_barrier = new CyclicBarrier(clusters,this::addCount);
-        //this.end_barrier = new CyclicBarrier(clusters,this::printResults);
 
         flag = new AtomicBoolean(true);
         InitializeWasteSites(file_path);
@@ -63,7 +57,7 @@ public class Parallel {
 
         if (sites > siteNum){ //If the number of sites that was requested is larger than dataset, create random sites
             int newSites = sites - siteNum;
-            Random random = new Random();
+            Random random = new Random(2);
             for (int i = 0; i < newSites; i++) {
                 double capacity = random.nextDouble(1,180);
                 double la = random.nextDouble(47.8, 53.2);
@@ -76,7 +70,7 @@ public class Parallel {
     }
 
     public void InitializeClusters(){
-        Random random = new Random();
+        Random random = new Random(1);
         Set<Integer> startClusters = new HashSet<>();
 
         int ListSize = wasteSiteList.size();
