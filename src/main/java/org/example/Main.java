@@ -64,7 +64,7 @@ public class Main {
                 System.out.println("Time spent computing: " + (par_end-par_start) + "ms");
                 break;
             case 3:
-                System.out.println("Distributed not implemented yet.");
+                System.out.println(":(");
                 break;
             default:
                 System.out.println("Please Select a valid option");

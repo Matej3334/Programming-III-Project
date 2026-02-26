@@ -76,4 +76,11 @@ public class Cluster {
         newSites.clear();
     }
     public List<WasteSite> getWasteSiteListCopy(){return this.wasteSiteList;}
+
+
+    //methods used in distributed
+    public void changeCenterDistributed(double la, double lo){
+        this.la=la;
+        this.lo=lo;
+    }
 }
