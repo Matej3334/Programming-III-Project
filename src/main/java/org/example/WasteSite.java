@@ -1,3 +1,5 @@
 package org.example;
 
-public record WasteSite (double capacity, double la, double lo) {}
+import java.io.Serializable;
+
+public record WasteSite (double capacity, double la, double lo) implements Serializable{}

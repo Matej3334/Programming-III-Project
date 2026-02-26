@@ -1,11 +1,12 @@
 package org.example;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Cluster {
+public class Cluster implements Serializable{
     private double la;
     private double lo;
     private List<WasteSite> wasteSiteList;
