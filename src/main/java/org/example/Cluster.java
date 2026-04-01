@@ -7,6 +7,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Cluster implements Serializable{
+    private static final long serialVersionUID = 2L;
     private double la;
     private double lo;
     private List<WasteSite> wasteSiteList;

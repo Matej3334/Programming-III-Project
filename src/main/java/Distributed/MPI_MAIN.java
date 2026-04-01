@@ -2,10 +2,7 @@ package Distributed;
 
 
 import mpi.MPI;
-import org.example.Cluster;
-import org.example.EuclideanDistance;
-import org.example.JSONReader;
-import org.example.WasteSite;
+import org.example.*;
 
 
 import java.io.*;
@@ -16,6 +13,9 @@ public class MPI_MAIN {
     private static final String file_path = "src/main/resources/germany/germany.json";
     private static final int width = 800;
     private static final int height = 600;
+    private static List<Cluster> clusterList;
+    private static List<WasteSite> wasteSiteList;
+    private static List<Cluster> additonalClusters;
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         if(args.length <4){
@@ -28,7 +28,6 @@ public class MPI_MAIN {
         int sites = Integer.parseInt(args[args.length-3]);
         System.out.println("site"+sites);
         int clusters = Integer.parseInt(args[args.length-2]);
-        System.out.println("cluster"+clusters);
         //int useGUI = Integer.parseInt(args[args.length-1]);
 
         int rank = MPI.COMM_WORLD.Rank();
@@ -36,17 +35,92 @@ public class MPI_MAIN {
         int size = MPI.COMM_WORLD.Size();
         final int root = 0;
 
+        List<Cluster> sendBuffer = null;
+        int[] send = new int[1];
         if (rank == root) {
 
-            List<WasteSite> wasteSiteList = initializeWasteSiteList(sites, clusters);
-            List<Cluster> clusterList = initializeClusters(wasteSiteList, clusters);
+            wasteSiteList = initializeWasteSiteList(sites, clusters);
+            clusterList = initializeClusters(wasteSiteList, clusters);
             assignToClusters(wasteSiteList,clusterList);
-            runRoot(wasteSiteList, clusterList, sites, clusters, size);
-        }
-        else{
-            runWorker(rank,size);
+
+            int remainder = clusters % size;
+
+            if (remainder == 0) {
+                sendBuffer=clusterList;
+            } else {
+                sendBuffer = clusterList.subList(0, clusterList.size() - remainder);
+                additonalClusters = clusterList.subList(clusterList.size() - remainder, clusterList.size());
+            }
+
+            send[0] = (int) Math.floor(clusterList.size()/size);
         }
 
+        boolean change = true;
+        int iterations = 1;
+        int cluster_size = 0;
+
+        MPI.COMM_WORLD.Bcast(send,0,1,MPI.INT,0);
+
+        cluster_size = send[0];
+
+        while(iterations < 20) {
+
+
+            Cluster[] receiveBuffer = new Cluster[cluster_size];
+            Cluster[] clusterArray = new Cluster[cluster_size*size];
+
+            if(rank==0){
+                clusterArray = sendBuffer.toArray(new Cluster[0]);
+            }
+
+            MPI.COMM_WORLD.Scatter(clusterArray, 0, cluster_size, MPI.OBJECT,
+                    receiveBuffer, 0, cluster_size, MPI.OBJECT, root);
+
+
+            List<Cluster> rootClusters = Arrays.asList(receiveBuffer);
+            calculateMean(rootClusters);
+
+            Cluster[] rootArray = rootClusters.toArray(new Cluster[0]);
+            Cluster[] gatherBuffer = new Cluster[cluster_size*size];
+
+            MPI.COMM_WORLD.Gather(rootArray , 0, cluster_size, MPI.OBJECT,
+                    gatherBuffer, 0, cluster_size, MPI.OBJECT, 0);
+
+            if(rank == root) {
+                List<Cluster> newClusterList = new ArrayList<>();
+                newClusterList.addAll(Arrays.asList(gatherBuffer));
+
+                if(additonalClusters!=null) {
+                    calculateMean(additonalClusters);
+                    newClusterList.addAll(additonalClusters);
+                }
+
+
+                for (int i = 0; i < clusterList.size(); i++) {
+                    double distance = EuclideanDistance.calculate(
+                            clusterList.get(i).getLa(), clusterList.get(i).getLo(),
+                            newClusterList.get(i).getLa(), newClusterList.get(i).getLo());
+
+                    if (distance > 0.001) {
+                        clusterList.get(i).setLa(newClusterList.get(i).getLa());
+                        clusterList.get(i).setLo(newClusterList.get(i).getLo());
+                    }
+                }
+
+                assignToClusters(wasteSiteList, clusterList);
+            }
+
+            iterations++;
+        }
+
+
+        if(rank==root){
+            printResults();
+            GUI gui = new GUI(width, height);
+            gui.drawClusters(clusterList);
+        }
+
+        System.out.println("FINISHED " + rank);
         MPI.Finalize();
     }
 
@@ -105,19 +179,16 @@ public class MPI_MAIN {
     }
 
 
-    private static void runRoot(List<WasteSite> wasteSiteList, List<Cluster> clusterList, int sites, int clusters, int size) throws IOException, ClassNotFoundException {
+    /*private static Object[] runRoot(List<WasteSite> wasteSiteList, List<Cluster> clusterList, int clusters, int size) throws IOException, ClassNotFoundException {
         assignToClusters(wasteSiteList,clusterList);
 
-        boolean change = true;
-        int iterations = 1;
-
-        Object[] sendBuffer = new Object[size];
+        /*Object[] sendBuffer = new Object[size];
 
         for (int i = 0; i < size; i++) {
             sendBuffer[i] = new ArrayList<>();
         }
 
-        int chunksize = (int) Math.floor(clusterList.size()/size);
+        int chunksize = (int) Math.floor(clusters/size);
         int remainder = clusterList.size() % size;
 
         int index = 0;
@@ -133,60 +204,17 @@ public class MPI_MAIN {
             }
         }
 
-        while(change && iterations < 20) {
-            change = false;
+        return sendBuffer;
+        return new Object[1];
+    }*/
 
-            Object[] receiveBuffer = new Object[1];
-
-            MPI.COMM_WORLD.Scatter(sendBuffer, 0, 1, MPI.OBJECT,
-                    receiveBuffer, 0, 1, MPI.OBJECT, 0);
-
-
-            List<Cluster> rootClusters = (List<Cluster>) receiveBuffer[0];
-            calculateMean(rootClusters);
-
-
-            Object[] gatherBuffer = new Object[size];
-
-            MPI.COMM_WORLD.Gather( rootClusters , 0, 1, MPI.OBJECT,
-                    gatherBuffer, 0, 1, MPI.OBJECT, 0);
-
-
-
-            List<Cluster> newClusterList = new ArrayList<>();
-
-            for (int i = 0; i < gatherBuffer.length; i++) {
-                if(gatherBuffer[i] != null){
-                    newClusterList.addAll((Collection<? extends Cluster>) gatherBuffer[i]);
-                }
-            }
-
-            for (int i = 0; i < clusterList.size(); i++) {
-                double distance = EuclideanDistance.calculate(
-                        clusterList.get(i).getLa(), clusterList.get(i).getLo(),
-                        newClusterList.get(i).getLa(), newClusterList.get(i).getLo()) ;
-
-                if (distance > 0.001) {
-                    clusterList.get(i).setLa(newClusterList.get(i).getLa());
-                    clusterList.get(i).setLo(newClusterList.get(i).getLo());
-                    change = true;
-                }
-            }
-
-            assignToClusters(wasteSiteList,clusterList);
-            iterations++;
-        }
-
-        MPI.Finalize();
-    }
-
-    private static void runWorker(int rank, int size) throws IOException, ClassNotFoundException {
+    /*private static void runWorker(int rank, int size) throws IOException, ClassNotFoundException {
 
         while (true) {
 
             Object[] receiveBuffer = new Object[1];
 
-            MPI.COMM_WORLD.Scatter(null, 0, 1, MPI.OBJECT,
+            MPI.COMM_WORLD.Scatter(null, 0, 0, MPI.OBJECT,
                     receiveBuffer, 0, 1, MPI.OBJECT, 0);
 
 
@@ -205,7 +233,7 @@ public class MPI_MAIN {
         }
 
         System.out.println("Worker with rank " + rank + " finished");
-    }
+    }*/
 
 
     private static void assignToClusters(List<WasteSite> wasteSiteList, List<Cluster> clusterList){
@@ -247,6 +275,17 @@ public class MPI_MAIN {
                     cluster.setLo(newCenter[1]);
                 }
             }
+        }
+    }
+
+    public static void printResults() {
+        System.out.println("\n===== K-means Clustering Results =====");
+        System.out.println("Number of clusters: " + clusterList.size());
+        System.out.println("Number of waste sites: " + wasteSiteList.size());
+        int i = 1;
+        for(Cluster cluster: clusterList){
+            System.out.println("Cluster " + i + " has " + cluster.getWasteSiteList().size() + " WasteSites.");
+            i++;
         }
     }
 }
