@@ -87,7 +87,7 @@ public class Parallel {
     }
 
     private void Kmeans(){
-
+        //Assign Waste sites in Main Thread
         for(WasteSite wasteSite : wasteSiteList){
             Cluster nearestCluster = null;
             double minDistance = Double.MAX_VALUE;
@@ -106,41 +106,42 @@ public class Parallel {
             nearestCluster.addWasteSite(wasteSite);
         }
 
+        //Main loop with multithreading
         while(flag.get() && iterations.get() < 20) {
             flag.set(false);
 
-            CountDownLatch latch = new CountDownLatch(clusters);
+            CountDownLatch latch = new CountDownLatch(clusters);//Latch that waits for all of the work to be finished
 
             for (int i = 0; i < clusters; i++) {
-                threadPool.submit(new FindNewMean(clusterList.get(i), latch));
+                threadPool.submit(new FindNewMean(clusterList.get(i), latch)); //threads can finish multiple tasks
             }
             try {
-                latch.await();
+                latch.await(); //Waits for the latch (all clusters to be finished)
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-            if(!flag.get()){
+            if(!flag.get()){ //If there was no change then break
                 break;
             }
 
-            CountDownLatch latch2 = new CountDownLatch(clusters);
+            CountDownLatch latch2 = new CountDownLatch(clusters); //New CountDownLatch for finding Nearest Cluster
             for (int i = 0; i < clusters; i++) {
                 threadPool.submit(new FindNearestCluster(clusterList.get(i), clusterList, latch2));
             }
 
 
             try {
-                latch2.await();
+                latch2.await(); //waiting again
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-            for (Cluster cluster: clusterList) {
+            for (Cluster cluster: clusterList) { // Change old cluster list with new cluster list
                 cluster.clearWasteSiteList();
                 cluster.changeSites();
             }
-            iterations.incrementAndGet();
+            iterations.incrementAndGet();// increment iteration
         }
 
         printResults();

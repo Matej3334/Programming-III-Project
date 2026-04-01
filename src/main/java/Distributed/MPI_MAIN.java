@@ -28,7 +28,7 @@ public class MPI_MAIN {
         int sites = Integer.parseInt(args[args.length-3]);
         System.out.println("site"+sites);
         int clusters = Integer.parseInt(args[args.length-2]);
-        //int useGUI = Integer.parseInt(args[args.length-1]);
+        int useGUI = Integer.parseInt(args[args.length-1]);
 
         int rank = MPI.COMM_WORLD.Rank();
         System.out.println(rank);
@@ -37,15 +37,16 @@ public class MPI_MAIN {
 
         List<Cluster> sendBuffer = null;
         int[] send = new int[1];
+        long mpi_start = System.currentTimeMillis();
         if (rank == root) {
-
+            //initialize everything and assign Waste sites to Clusters on Main Computer
             wasteSiteList = initializeWasteSiteList(sites, clusters);
             clusterList = initializeClusters(wasteSiteList, clusters);
             assignToClusters(wasteSiteList,clusterList);
 
             int remainder = clusters % size;
 
-            if (remainder == 0) {
+            if (remainder == 0) { // Divide the Clusters so that every computer gets an equal amount of Clusters
                 sendBuffer=clusterList;
             } else {
                 sendBuffer = clusterList.subList(0, clusterList.size() - remainder);
@@ -59,44 +60,45 @@ public class MPI_MAIN {
         int iterations = 1;
         int cluster_size = 0;
 
-        MPI.COMM_WORLD.Bcast(send,0,1,MPI.INT,0);
+        MPI.COMM_WORLD.Bcast(send,0,1,MPI.INT,0); //Broadcast the number of clusters everyone will receive
 
-        cluster_size = send[0];
+        cluster_size = send[0]; //get the size
 
-        while(iterations < 20) {
-
-
+        while(iterations < 20) { //Main loop
+            //Define both buffers
             Cluster[] receiveBuffer = new Cluster[cluster_size];
             Cluster[] clusterArray = new Cluster[cluster_size*size];
 
-            if(rank==0){
+            if(rank==0){ //get cluster array for sending
                 clusterArray = sendBuffer.toArray(new Cluster[0]);
             }
 
+            //Scatter so every Computer gets a piece of the ClusterArray
             MPI.COMM_WORLD.Scatter(clusterArray, 0, cluster_size, MPI.OBJECT,
                     receiveBuffer, 0, cluster_size, MPI.OBJECT, root);
 
-
+            //Received Array and calculate the Mean of the Clusters in the array
             List<Cluster> rootClusters = Arrays.asList(receiveBuffer);
             calculateMean(rootClusters);
 
-            Cluster[] rootArray = rootClusters.toArray(new Cluster[0]);
-            Cluster[] gatherBuffer = new Cluster[cluster_size*size];
+            Cluster[] rootArray = rootClusters.toArray(new Cluster[0]); //New clusters with updated Means
+            Cluster[] gatherBuffer = new Cluster[cluster_size*size]; //Gather Buffer
 
+            //Main Computer Gathers all the elements from every other rank
             MPI.COMM_WORLD.Gather(rootArray , 0, cluster_size, MPI.OBJECT,
                     gatherBuffer, 0, cluster_size, MPI.OBJECT, 0);
 
-            if(rank == root) {
+            if(rank == root) { //Main rank calculates
                 List<Cluster> newClusterList = new ArrayList<>();
-                newClusterList.addAll(Arrays.asList(gatherBuffer));
+                newClusterList.addAll(Arrays.asList(gatherBuffer)); //Add all clusters to the same list
 
-                if(additonalClusters!=null) {
+                if(additonalClusters!=null) { //These are leftover Clusters because there might be a remainder
                     calculateMean(additonalClusters);
-                    newClusterList.addAll(additonalClusters);
+                    newClusterList.addAll(additonalClusters); //Add them all to the New List
                 }
 
 
-                for (int i = 0; i < clusterList.size(); i++) {
+                for (int i = 0; i < clusterList.size(); i++) { // If there was a change in the mean then change the coordinates of the original clusters
                     double distance = EuclideanDistance.calculate(
                             clusterList.get(i).getLa(), clusterList.get(i).getLo(),
                             newClusterList.get(i).getLa(), newClusterList.get(i).getLo());
@@ -107,17 +109,21 @@ public class MPI_MAIN {
                     }
                 }
 
-                assignToClusters(wasteSiteList, clusterList);
+                assignToClusters(wasteSiteList, clusterList); //Reassign the wasteSites
             }
 
             iterations++;
         }
 
 
-        if(rank==root){
+        if(rank==root) {
             printResults();
-            GUI gui = new GUI(width, height);
-            gui.drawClusters(clusterList);
+            if(useGUI==1) {
+                GUI gui = new GUI(width, height);
+                gui.drawClusters(clusterList);
+            }
+            long mpi_end = System.currentTimeMillis();
+            System.out.println("Time spent computing: " + (mpi_end-mpi_start) + "ms");
         }
 
         System.out.println("FINISHED " + rank);
@@ -177,63 +183,6 @@ public class MPI_MAIN {
 
         return clusterList;
     }
-
-
-    /*private static Object[] runRoot(List<WasteSite> wasteSiteList, List<Cluster> clusterList, int clusters, int size) throws IOException, ClassNotFoundException {
-        assignToClusters(wasteSiteList,clusterList);
-
-        /*Object[] sendBuffer = new Object[size];
-
-        for (int i = 0; i < size; i++) {
-            sendBuffer[i] = new ArrayList<>();
-        }
-
-        int chunksize = (int) Math.floor(clusters/size);
-        int remainder = clusterList.size() % size;
-
-        int index = 0;
-        for (int i = 0; i < clusterList.size(); i++) {
-            int processSize = chunksize;
-
-            if(i<remainder){
-                processSize++;
-            }
-            for (int j = 0; j < processSize; j++) {
-                ((List<Cluster>) sendBuffer[i]).add(clusterList.get(index));
-                index++;
-            }
-        }
-
-        return sendBuffer;
-        return new Object[1];
-    }*/
-
-    /*private static void runWorker(int rank, int size) throws IOException, ClassNotFoundException {
-
-        while (true) {
-
-            Object[] receiveBuffer = new Object[1];
-
-            MPI.COMM_WORLD.Scatter(null, 0, 0, MPI.OBJECT,
-                    receiveBuffer, 0, 1, MPI.OBJECT, 0);
-
-
-
-            List<Cluster> clusterList = (List<Cluster>) receiveBuffer[0];
-
-            if (clusterList == null || clusterList.isEmpty()) {
-                break;
-            }
-
-            calculateMean(clusterList);
-
-
-            MPI.COMM_WORLD.Gather(clusterList, 0, 1, MPI.OBJECT,
-                    null, 0, 1, MPI.OBJECT, 0);
-        }
-
-        System.out.println("Worker with rank " + rank + " finished");
-    }*/
 
 
     private static void assignToClusters(List<WasteSite> wasteSiteList, List<Cluster> clusterList){

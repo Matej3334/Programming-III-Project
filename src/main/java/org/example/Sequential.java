@@ -17,7 +17,7 @@ public class Sequential {
         InitializeWasteSites(file_path);
         InitializeClusters();
         Kmeans();
-        printResults();
+        //printResults();
     }
 
     private void InitializeWasteSites(String file_path){
@@ -72,6 +72,7 @@ public class Sequential {
         int iterations = 0;
         boolean change = true;
 
+        //assigning Waste sites to Clusters
         for(WasteSite wasteSite : wasteSiteList){
             Cluster nearestCluster = null;
             double minDistance = Double.MAX_VALUE;
@@ -80,21 +81,21 @@ public class Sequential {
                 double distance = EuclideanDistance.calculate(
                         wasteSite.la(), wasteSite.lo(), cluster.getLa(), cluster.getLo());
 
-                if(distance < minDistance){
+                if(distance < minDistance){ //Check if it's smaller than minDistance and set it as a nearest Cluster if it is
                     minDistance = distance;
                     nearestCluster = cluster;
                 }
             }
 
-            assert nearestCluster != null;
-            nearestCluster.addWasteSite(wasteSite);
+            assert nearestCluster != null; //I had errors or warnings without this
+            nearestCluster.addWasteSite(wasteSite); //assign WasteSite to nearest Cluster
         }
 
-        while (change && iterations < 20) {
+        while (change && iterations < 20) { //The main loop in the program
             change = false;
             iterations++;
 
-            for(Cluster cluster : clusterList){
+            for(Cluster cluster : clusterList){ //For every cluster I check if the center was changed from the last iteration
                 if(!cluster.getWasteSiteList().isEmpty()) {
 
                     double[] newCenter = cluster.changeCenter();
@@ -102,7 +103,7 @@ public class Sequential {
                     double distance = EuclideanDistance.calculate(
                             cluster.getLa(), cluster.getLo(), newCenter[0], newCenter[1]);
 
-                    if (distance > 0.001) {
+                    if (distance > 0.001) {//If it is changed then set the newCenter as the center of the cluster
                         cluster.setLa(newCenter[0]);
                         cluster.setLo(newCenter[1]);
                         change = true;
@@ -114,11 +115,11 @@ public class Sequential {
                 break;
             }
 
-            for(Cluster cluster : clusterList){
+            for(Cluster cluster : clusterList){ //Clear the clusterList
                 cluster.clearWasteSiteList();
             }
 
-            for(WasteSite wasteSite : wasteSiteList){
+            for(WasteSite wasteSite : wasteSiteList){ //Reassign them to the new clusters
                 Cluster nearestCluster = null;
                 double minDistance = Double.MAX_VALUE;
 
@@ -136,13 +137,13 @@ public class Sequential {
                 nearestCluster.addWasteSite(wasteSite);
             }
         }
-        System.out.println("Kmeans finished with " + iterations + " iterations.");
+        //System.out.println("Kmeans finished with " + iterations + " iterations.");
     }
 
-    public List<Cluster> getClusterList() {
+    public List<Cluster> getClusterList() { //So I can use Main to call GUI
         return clusterList;
     }
-    private void printResults() {
+    private void printResults() { //Printing results
         System.out.println("\n===== K-means Clustering Results =====");
         System.out.println("Number of clusters: " + clusterList.size());
         System.out.println("Number of waste sites: " + wasteSiteList.size());

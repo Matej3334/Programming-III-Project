@@ -16,9 +16,9 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Do you want to use GUI?");
-        System.out.println("Select 1 for yes or 2 for no");
+        //System.out.println("Select 1 for yes or 2 for no");
         int useGUI = scanner.nextInt();
-
+        //int useGUI = 2;
         System.out.println("Select one of the following");
         System.out.println("1-sequential, 2-parallel, 3-distributed");
         int runProgram = scanner.nextInt();
@@ -34,6 +34,7 @@ public class Main {
             System.out.println("Please select height of screen");
             height = scanner.nextInt();
         }
+
         switch (runProgram){
             case 1:
                 long seq_start = System.currentTimeMillis();

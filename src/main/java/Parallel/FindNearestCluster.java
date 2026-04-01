@@ -8,7 +8,6 @@ import org.example.WasteSite;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-//THIS IS NOT USEDDDDDDDDDDDDDDDDDDDDDDDDDD
 
 public class FindNearestCluster implements Runnable{
     private final List<WasteSite> wasteSiteList;
@@ -41,7 +40,7 @@ public class FindNearestCluster implements Runnable{
             }
 
             assert nearestCluster != null;
-            nearestCluster.addWasteSiteParallel(wasteSite);
+            nearestCluster.addWasteSiteParallel(wasteSite);//add to the new cluster List so there is no conflicts
 
         }
         latch.countDown();

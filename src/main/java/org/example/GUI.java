@@ -20,7 +20,7 @@ public class GUI extends JFrame {
     private List<NewWaypoint> clusterWaypoints;
     private final Random rand = new Random();
 
-    public GUI(int width, int height) {
+    public GUI(int width, int height) { //Initializing JFrame
         setTitle("Waste Site Clustering");
         setSize(width, height);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -30,7 +30,7 @@ public class GUI extends JFrame {
         setVisible(true);
     }
 
-    private void initializeMap() {
+    private void initializeMap() { //Initializing jxmapviewer
         setLayout(new BorderLayout());
 
         OSMTileFactoryInfo info = new OSMTileFactoryInfo(
@@ -55,11 +55,11 @@ public class GUI extends JFrame {
         add(mapViewer, BorderLayout.CENTER);
     }
 
-    public void drawClusters(List<Cluster> clusters) {
+    public void drawClusters(List<Cluster> clusters) { //Setting waypoints
         wasteSiteWaypoints = new ArrayList<>();
         clusterWaypoints = new ArrayList<>();
 
-        for (Cluster cluster : clusters) {
+        for (Cluster cluster : clusters) { // Every Cluster has a random color for Waste sites and black center
             Color clusterColor = new Color(rand.nextInt(255), rand.nextInt(255), rand.nextInt(255));
 
             for (WasteSite wasteSite : cluster.getWasteSiteList()) {
@@ -72,16 +72,16 @@ public class GUI extends JFrame {
         }
 
 
-        Painter<JXMapViewer> overlayPainter = (g, map, width, height) -> {
+        Painter<JXMapViewer> overlayPainter = (g, map, width, height) -> { //Using Overlay Painter
             if (wasteSiteWaypoints == null || clusterWaypoints == null) {
                 return;
             }
 
-            for (NewWaypoint waypoint : wasteSiteWaypoints) {
+            for (NewWaypoint waypoint : wasteSiteWaypoints) { //Drawing WasteSite Waypoints
                 drawWaypoint(g, map, waypoint, waypoint.color(), 4);
             }
 
-            for (NewWaypoint waypoint : clusterWaypoints) {
+            for (NewWaypoint waypoint : clusterWaypoints) { //Drawing Cluster Waypoints
                 drawWaypoint(g, map, waypoint, Color.BLACK, 8);
             }
         };
@@ -91,7 +91,7 @@ public class GUI extends JFrame {
     }
 
     private void drawWaypoint(Graphics2D g, JXMapViewer map, NewWaypoint waypoint,
-                              Color color, int radius) {
+                              Color color, int radius) { // Draw function for waypoints
 
         Point2D point = map.convertGeoPositionToPoint(waypoint.position());
         int x = (int) point.getX();

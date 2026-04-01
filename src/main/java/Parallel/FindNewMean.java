@@ -19,13 +19,13 @@ public class FindNewMean implements Runnable{
     }
     @Override
     public void run() {
-        if(calculateMedian()){
+        if(calculateMean()){
             Parallel.flag.set(true);
         }
         //System.out.println("Found mean for " + Thread.currentThread().getName());
         latch.countDown();
     }
-    private boolean calculateMedian(){
+    private boolean calculateMean(){
         boolean change = false;
         if(!wasteSiteList.isEmpty()) {
 
